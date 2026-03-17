@@ -6,7 +6,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET
 
-from .models import control, SensorData
+from .models import control, SensorData, Garage
 
 
 def home(request):
@@ -14,7 +14,7 @@ def home(request):
 
 
 def update(request):
-    data = get_object_or_404(control_form, id=id)
+    data = control.objects.first()
 
     if(request.method == 'POST'):
         form = control_form(request.POST, instance=data)
@@ -48,9 +48,13 @@ def get_sensor_data(request):
 
 @require_GET
 def send_sensor_data(request):
+    gar = Garage.objects.first()
 
     data = {
-        "relay": "hello"
+        "is_garage": gar.is_garage, 
+        "garage_delay": gar.garage_delay, 
+        "is_light": gar.is_light, 
+        "is_exhaust": gar.is_exhaust
     }
 
     print(data)
