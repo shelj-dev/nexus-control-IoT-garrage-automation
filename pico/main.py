@@ -113,6 +113,8 @@ def main():
         if wifi_status:
             send_data(sensor)
 
+            get_data(sensor)
+
         time.sleep(1)
 
 
