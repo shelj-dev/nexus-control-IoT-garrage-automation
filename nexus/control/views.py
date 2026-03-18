@@ -54,7 +54,9 @@ def send_sensor_data(request):
         "is_garage": gar.is_garage, 
         "garage_delay": gar.garage_delay, 
         "is_light": gar.is_light, 
-        "is_exhaust": gar.is_exhaust
+        "is_exhaust": gar.is_exhaust,
+        "is_garage_open": gar.is_garage_open,
+        "is_garage_close": gar.is_garage_close
     }
 
     print(data)

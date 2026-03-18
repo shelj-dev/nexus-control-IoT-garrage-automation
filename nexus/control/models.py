@@ -16,3 +16,5 @@ class Garage(models.Model):
     garage_delay = models.IntegerField(blank=True, null=True)
     is_light = models.BooleanField()
     is_exhaust = models.BooleanField()
+    is_garage_open = models.BooleanField()
+    is_garage_close = models.BooleanField()

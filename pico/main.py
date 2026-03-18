@@ -1,21 +1,21 @@
 import network
 import time
 import urequests
-from machine import ADC
+from machine import ADC, Pin
 
 WIFI_SSID = "iot kids"
 WIFI_PASSWORD = "bright kidoos"
 
-SERVER_IP_URL = "http://10.189.178.236:8000/"
+SERVER_IP_URL = "http://10.189.178.101:8000/"
 
 wifi_status = False
 
 # MQ2 sensor on ADC pin
-mq2 = ADC(28)
-relay1 = Pin(16, Pin.OUT)
-relay2= Pin(17, Pin.OUT)
-relay3 = Pin(18, Pin.OUT)
-relay4= Pin(19, Pin.OUT)
+mq2 = ADC(27)
+relay1 = Pin(2, Pin.OUT)
+relay2= Pin(3, Pin.OUT)
+relay3 = Pin(4, Pin.OUT)
+relay4= Pin(5, Pin.OUT)
 
 def connect_wifi():
     global wifi_status
@@ -82,6 +82,22 @@ def send_data(data):
             r.close()
 
 
+def get_data():
+
+    url = SERVER_IP_URL + "api/send-relay/"
+    
+    try:
+        r = urequests.get(url)
+        data = r.json()
+        r.close()
+
+        print(data)
+        return data
+
+    except Exception as e:
+        print("Get error:", e)
+
+
 def motor_on():
     relay2.value(0)
     relay1.value(1)
@@ -103,17 +119,52 @@ def exhaust_off():
     relay4.value(0)
 
 
+def garage_open(delay):
+    relay1.value(1)
+    relay2.value(0)
+    time.sleep(delay)
+
+    
+def garage_close(delay):
+    relay1.value(0)
+    relay2.value(1)
+    time.sleep(delay)
+
+
 def main():
     while True:
 
         connect_wifi()
-
         sensor = sensor_data()
 
         if wifi_status:
             send_data(sensor)
 
-            get_data(sensor)
+            data = get_data()
+
+            is_garage = data.get("is_garage")            
+            garage_delay = data.get("garage_delay")            
+            is_light = data.get("is_light")            
+            is_exhaust = data.get("is_exhaust")
+            is_garage_open = data.get("is_garage_open")
+            is_garage_close = data.get("is_garage_close")
+
+            if is_light:
+                light_on()
+            else:
+                light_off()
+                
+            if is_exhaust:
+                exhaust_on()
+            else:
+                exhaust_off()
+
+            if is_garage_open:
+                garage_open(garage_delay)
+            
+            if is_garage_close:
+                garage_close(garage_delay)
+
 
         time.sleep(1)
 
