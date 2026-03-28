@@ -3,20 +3,23 @@ import time
 import urequests
 from machine import ADC, Pin
 
-WIFI_SSID = "iot kids"
-WIFI_PASSWORD = "bright kidoos"
+# WIFI
+WIFI_SSID = "FOXTECH"
+WIFI_PASSWORD = "Foxtechajalad"
 
-SERVER_IP_URL = "http://10.189.178.101:8000/"
+SERVER_IP_URL = "http://192.168.1.41:8000/"
+
+# PINS
+mq2 = ADC(27)
+
+relay1 = Pin(2, Pin.OUT)   # Motor OPEN
+relay2 = Pin(3, Pin.OUT)   # Motor CLOSE
+relay3 = Pin(4, Pin.OUT)   # Light
+relay4 = Pin(5, Pin.OUT)   # Exhaust
 
 wifi_status = False
 
-# MQ2 sensor on ADC pin
-mq2 = ADC(27)
-relay1 = Pin(2, Pin.OUT)
-relay2= Pin(3, Pin.OUT)
-relay3 = Pin(4, Pin.OUT)
-relay4= Pin(5, Pin.OUT)
-
+# WIFI
 def connect_wifi():
     global wifi_status
 
@@ -28,14 +31,16 @@ def connect_wifi():
         print("WiFi connected:", wlan.ifconfig()[0])
         return
 
-    print("Connecting to WiFi...")
-    wlan.connect(WIFI_SSID, WIFI_PASSWORD)
+    if not wlan.isconnected():
 
-    timeout = 5
-    while timeout > 0 and not wlan.isconnected():
-        print("Waiting for connection...")
-        time.sleep(1)
-        timeout -= 1
+        print("Connecting to WiFi...")
+        wlan.connect(WIFI_SSID, WIFI_PASSWORD)
+
+        timeout = 5
+        while timeout > 0 and not wlan.isconnected():
+            print("Waiting for connection...")
+            time.sleep(1)
+            timeout -= 1
 
     wifi_status = wlan.isconnected()
 
@@ -43,23 +48,12 @@ def connect_wifi():
         print("WiFi connected:", wlan.ifconfig()[0])
     else:
         print("WiFi failed")
-       
 
+# SENSOR
 def sensor_data():
-    value = mq2.read_u16()
-    voltage = value * 3.3 / 65535
+    return mq2.read_u16()
 
-    print("Raw:", value, "Voltage:", round(voltage, 2))
-
-    return value
-
-def light_on():
-    relay3.value(1)
-    
-def light_off():
-    relay3.value(0)
-
-
+# SEND
 def send_data(data):
 
     payload = {
@@ -81,31 +75,26 @@ def send_data(data):
         if r is not None:
             r.close()
 
-
+# GET
 def get_data():
 
     url = SERVER_IP_URL + "api/send-relay/"
     
     try:
         r = urequests.get(url)
+        
+        print("RAW RESPONSE:", r.text)  
         data = r.json()
         r.close()
-
-        print(data)
+        
+        #print(data)
         return data
 
     except Exception as e:
         print("Get error:", e)
+        return None
 
-
-def motor_on():
-    relay2.value(0)
-    relay1.value(1)
-    
-def motor_off():
-    relay2.value(1)
-    relay1.value(0)
-    
+# RELAY CONTROL (ACTIVE LOW)
 def light_on():
     relay3.value(1)
     
@@ -114,59 +103,79 @@ def light_off():
 
 def exhaust_on():
     relay4.value(1)
-
+    
 def exhaust_off():
     relay4.value(0)
 
+def motor_stop():
+    print("Motor stop")
+    relay1.value(0)
+    relay2.value(0)
 
-def garage_open(delay):
+def motor_open():
     relay1.value(1)
     relay2.value(0)
-    time.sleep(delay)
+    time.sleep(1)
 
-    
-def garage_close(delay):
+def motor_close():
     relay1.value(0)
     relay2.value(1)
-    time.sleep(delay)
+    time.sleep(1)
 
-
+# MAIN
 def main():
+
+    motor_stop()
     while True:
+        try:
+            connect_wifi()
 
-        connect_wifi()
-        sensor = sensor_data()
-
-        if wifi_status:
-            send_data(sensor)
+            val = sensor_data()
+            send_data(val)
 
             data = get_data()
+            if not data:
+                time.sleep(2)
+                continue
 
-            is_garage = data.get("is_garage")            
-            garage_delay = data.get("garage_delay")            
-            is_light = data.get("is_light")            
-            is_exhaust = data.get("is_exhaust")
-            is_garage_open = data.get("is_garage_open")
-            is_garage_close = data.get("is_garage_close")
+            print(data)
 
-            if is_light:
+            is_light = data.get("is_light", False)
+            is_exhaust = data.get("is_exhaust", False)
+            is_open = data.get("is_garage_open", False)
+            is_close = data.get("is_garage_close", False)
+
+            # ---------- OPEN ----------
+            if is_open:
+                print("OPEN")
+
                 light_on()
-            else:
+                motor_open()
+
+            # ---------- CLOSE ----------
+            elif is_close:
+                print("CLOSE")
+
+                motor_close()
                 light_off()
-                
-            if is_exhaust:
-                exhaust_on()
+
+            # ---------- NORMAL ----------
             else:
-                exhaust_off()
+                motor_stop()
+                if is_exhaust:
+                    exhaust_on()
+                    light_on()
+                else:
+                    exhaust_off()
 
-            if is_garage_open:
-                garage_open(garage_delay)
-            
-            if is_garage_close:
-                garage_close(garage_delay)
+                if is_light:
+                    light_on()
+                else:
+                    light_off()
 
+        except Exception as e:
+            print("Error:", e)
 
         time.sleep(1)
-
 
 main()

@@ -1,0 +1,378 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Garage IoT Control</title>
+    <link rel="stylesheet" href="{% static 'dashboard/styles.css' %}">
+    <!-- Fonts: Inter & Outfit for premium look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Tailwind CSS (CDN for rapid prototyping) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- Tailwind Config for Custom Colors/Fonts -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        glass: {
+                            100: 'rgba(255, 255, 255, 0.05)',
+                            200: 'rgba(255, 255, 255, 0.1)',
+                            border: 'rgba(255, 255, 255, 0.15)',
+                        },
+                        accent: {
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            glow: 'rgba(99, 102, 241, 0.5)',
+                        },
+                        danger: {
+                            500: '#ef4444',
+                            glow: 'rgba(239, 68, 68, 0.5)',
+                        },
+                        success: {
+                            500: '#10b981',
+                            glow: 'rgba(16, 185, 129, 0.5)',
+                        },
+                        dark: {
+                            bg: '#0a0a0c',
+                            surface: '#131316',
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'dashboard/styles.css' %}">
+</head>
+
+<body
+    class="bg-dark-bg text-gray-100 min-h-screen relative overflow-x-hidden antialiased selection:bg-accent-500 selection:text-white">
+
+    <!-- Animated Background Gradients -->
+    <div class="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
+        <div
+            class="absolute -top-[20%] -left-[10%] w-[50vw] h-[50vw] rounded-full bg-accent-600/20 blur-[120px] mix-blend-screen animate-pulse-slow">
+        </div>
+        <div class="absolute top-[40%] -right-[10%] w-[40vw] h-[40vw] rounded-full bg-indigo-600/10 blur-[100px] mix-blend-screen animate-float"
+            style="animation-delay: 2s;"></div>
+        <div
+            class="absolute -bottom-[20%] left-[20%] w-[60vw] h-[60vw] rounded-full bg-blue-900/20 blur-[150px] mix-blend-screen">
+        </div>
+        <div
+            class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wMykiLz48L3N2Zz4=')] [mask-image:linear-gradient(to_bottom,white,transparent)]">
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 pb-32">
+
+        <!-- Header -->
+        <header class="flex items-center justify-between mb-12 animate-fade-in">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-500 to-indigo-600 flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.4)]">
+                    <i class="ph ph-garage text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="font-display font-bold text-xl tracking-tight text-white">NexusControl</h1>
+                    <p class="text-xs text-gray-400 font-medium">IoT Automation Control Center</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div
+                    class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-glass-100 border border-glass-border backdrop-blur-md">
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span
+                            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-success-500 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-success-500"></span>
+                    </span>
+                    <span class="text-sm font-medium text-gray-300">System Online</span>
+                </div>
+                <button
+                    class="w-10 h-10 rounded-full bg-glass-100 hover:bg-glass-200 border border-glass-border flex items-center justify-center transition-all duration-300">
+                    <i class="ph ph-bell text-gray-300 text-lg"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Hero Actions -->
+        <section class="mb-12">
+            <div class="glass-card rounded-3xl p-8 sm:p-10 border border-glass-border relative overflow-hidden group">
+                <!-- Subtle glow effect behind content -->
+                <div
+                    class="absolute inset-0 bg-gradient-to-r from-accent-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+                </div>
+
+                <div class="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    <div>
+                        <h2
+                            class="font-display text-4xl sm:text-5xl font-bold text-white mb-4 tracking-tight leading-tight">
+                            Control Your Space Intelligently <br>
+                            <span
+                                class="text-transparent bg-clip-text bg-gradient-to-r from-accent-400 to-indigo-400">garage
+                                ecosystem</span>
+                        </h2>
+                        <p class="text-gray-400 text-lg mb-8 max-w-md">
+                            Monitor air quality, control lighting, and manage access securely from anywhere in the
+                            world.
+                        </p>
+
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <button id="btn-open"
+                                class="btn-glow primary flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-accent-600 to-indigo-600 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]">
+                                <i class="ph ph-door-open text-xl"></i>
+                                Open Garage
+                            </button>
+                            <button id="btn-close"
+                                class="btn-glow secondary flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-gray-200 bg-glass-200 border border-glass-border hover:bg-glass-100 border-t-white/10 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]">
+                                <i class="ph ph-door text-xl"></i>
+                                Close Garage
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-center lg:justify-end relative">
+                        <!-- Door Status Visualization -->
+                        <div class="relative w-64 h-64 sm:w-80 sm:h-80">
+                            <!-- Outer Ring -->
+                            <div
+                                class="absolute inset-0 rounded-full border border-dashed border-gray-700/50 animate-[spin_60s_linear_infinite]">
+                            </div>
+                            <!-- Middle Ring -->
+                            <div
+                                class="absolute inset-4 rounded-full border border-accent-500/20 animate-[spin_40s_linear_infinite_reverse]">
+                            </div>
+
+                            <!-- Center Content -->
+                            <div class="absolute inset-8 rounded-full bg-dark-bg border border-glass-border shadow-2xl flex flex-col items-center justify-center dashboard-status-orb z-10 transition-all duration-700"
+                                id="door-status-indicator">
+                                <div class="w-20 h-20 rounded-full bg-gray-800/50 flex items-center justify-center mb-3 shadow-inner"
+                                    id="door-icon-wrapper">
+                                    <i class="ph ph-garage text-4xl text-gray-400 transition-colors duration-500"
+                                        id="door-icon"></i>
+                                </div>
+                                <span class="font-display font-bold text-2xl tracking-wide text-white"
+                                    id="door-status-text">CLOSED</span>
+                                <span class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Status</span>
+                            </div>
+
+                            <!-- Glowing background -->
+                            <div class="absolute inset-10 rounded-full bg-accent-500/20 blur-2xl -z-10 transition-colors duration-700"
+                                id="door-glow"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bento Grid Layout -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            <!-- Controls Group -->
+            <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Light Control -->
+                <div
+                    class="glass-card rounded-3xl p-6 border border-glass-border flex flex-col justify-between hover-lift">
+                    <div class="flex justify-between items-start mb-6">
+                        <div
+                            class="w-12 h-12 rounded-2xl bg-yellow-500/10 text-yellow-500 flex items-center justify-center">
+                            <i class="ph ph-lightbulb text-2xl" id="light-icon"></i>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggle-light">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-white">Main Lighting</h3>
+                        <p class="text-sm text-gray-400 mt-1" id="light-status-text">Off</p>
+                    </div>
+                </div>
+
+                <!-- Fan Control -->
+                <div class="glass-card rounded-3xl p-6 border border-glass-border flex flex-col justify-between hover-lift"
+                    id="fan-card">
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-400 flex items-center justify-center transition-colors duration-300"
+                            id="fan-icon-wrapper">
+                            <i class="ph ph-fan text-2xl" id="fan-icon"></i>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggle-fan">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-white">Exhaust Fan</h3>
+                        <div class="flex items-center gap-2 mt-1">
+                            <p class="text-sm text-gray-400" id="fan-status-text">Off</p>
+                            <span
+                                class="text-xs px-2 py-0.5 rounded-full bg-gray-800 text-gray-300 border border-gray-700"
+                                id="fan-mode-badge">Manual</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Air Quality -->
+                <div
+                    class="sm:col-span-2 glass-card rounded-3xl p-6 border border-glass-border relative overflow-hidden">
+                    <div class="absolute right-0 top-0 w-64 h-64 bg-emerald-500/5 blur-[80px] rounded-full pointer-events-none transition-colors duration-1000"
+                        id="aq-glow"></div>
+
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                            <i class="ph ph-wind text-gray-400"></i> Air Quality Monitor
+                        </h3>
+                        <span
+                            class="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-colors duration-500"
+                            id="aq-badge">Safe Air</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 items-center">
+                        <!-- Gauge -->
+                        <div class="relative flex justify-center">
+                            <!-- SVG Gauge Arc -->
+                            <svg class="w-40 h-40 transform -rotate-90" viewBox="0 0 120 120">
+                                <circle cx="60" cy="60" r="54" fill="none" class="stroke-gray-800" stroke-width="10"
+                                    stroke-linecap="round"></circle>
+                                <circle cx="60" cy="60" r="54" fill="none"
+                                    class="stroke-emerald-500 transition-all duration-1000 ease-out" stroke-width="10"
+                                    stroke-linecap="round" stroke-dasharray="339.29" stroke-dashoffset="270"
+                                    id="aq-meter-fill"></circle>
+                            </svg>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <span class="text-3xl font-display font-bold text-white tabular-nums"
+                                    id="aq-value">42</span>
+                                <span
+                                    class="text-xs text-gray-400 font-medium tracking-wide text-center">AQI<br>Good</span>
+                            </div>
+                        </div>
+
+                        <!-- Details -->
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-gray-400">CO Level</span>
+                                    <span class="text-white font-medium" id="co-value">12 ppm</span>
+                                </div>
+                                <div class="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
+                                    <div class="h-full bg-blue-400 rounded-full transition-all duration-1000 w-[15%]"
+                                        id="co-bar"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-gray-400">Combustible Gas</span>
+                                    <span class="text-white font-medium" id="gas-value">0% LEL</span>
+                                </div>
+                                <div class="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
+                                    <div class="h-full bg-emerald-400 rounded-full transition-all duration-1000 w-[2%]"
+                                        id="gas-bar"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Log -->
+            <div
+                class="glass-card rounded-3xl p-6 border border-glass-border flex flex-col h-full lg:h-auto max-h-[500px]">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                        <i class="ph ph-list-dashes text-gray-400"></i> System Activity
+                    </h3>
+                    <button class="text-xs text-gray-400 hover:text-white transition-colors"
+                        id="btn-clear-logs">Clear</button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4" id="activity-log">
+                    <!-- Logs will be injected here via JS -->
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Mobile Floating Controls -->
+    <div class="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-[90%] max-w-sm sm:hidden z-50">
+        <div
+            class="glass-card rounded-2xl p-2 border border-glass-border/50 shadow-2xl backdrop-blur-xl flex justify-between items-center">
+            <button id="mobile-btn-open"
+                class="flex-1 flex flex-col items-center justify-center py-2 text-gray-400 hover:text-accent-400 transition-colors">
+                <i class="ph ph-caret-up text-xl mb-1"></i>
+                <span class="text-[10px] uppercase font-bold tracking-wider">Open</span>
+            </button>
+            <div class="w-px h-8 bg-glass-border"></div>
+            <div class="flex-1 flex flex-col items-center justify-center py-2 relative">
+                <!-- Status dot -->
+                <div class="absolute top-2 right-6 w-2 h-2 rounded-full bg-red-500 animate-pulse"
+                    id="mobile-status-dot"></div>
+                <i class="ph ph-garage text-2xl text-white mb-1"></i>
+                <span class="text-[10px] uppercase font-bold tracking-wider text-gray-300"
+                    id="mobile-status-label">Closed</span>
+            </div>
+            <div class="w-px h-8 bg-glass-border"></div>
+            <button id="mobile-btn-close"
+                class="flex-1 flex flex-col items-center justify-center py-2 text-gray-400 hover:text-indigo-400 transition-colors">
+                <i class="ph ph-caret-down text-xl mb-1"></i>
+                <span class="text-[10px] uppercase font-bold tracking-wider">Close</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-8 border-t border-glass-border/30 bg-dark-bg/50 backdrop-blur-lg pb-24 sm:pb-8 pt-8">
+        <div
+            class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p class="text-gray-500 text-sm">
+                &copy; 2026 SmartSpace IoT Systems.
+            </p>
+            <div class="flex items-center gap-2 text-sm text-gray-500">
+                <span>Powered by</span>
+                <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-800/50 border border-gray-700/50">
+                    <span class="text-[#092E20] font-bold tracking-tight bg-[#44B78B] px-1 rounded-sm text-xs">dj</span>
+                    <span>Django</span>
+                </div>
+                <span>+</span>
+                <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-800/50 border border-gray-700/50">
+                    <i class="ph-fill ph-cpu text-[#C51A4A]"></i>
+                    <span>Raspberry Pi</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'dashboard/script.js' %}"></script>
+</body>
+
+</html>

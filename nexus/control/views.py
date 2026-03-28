@@ -10,20 +10,20 @@ from .models import control, SensorData, Garage
 
 
 def home(request):
-    return render(request, "home.html")
+    return render(request, "dashboard/index.html")
 
 
-def update(request):
-    data = control.objects.first()
+# def update(request):
+#     data = control.objects.first()
 
-    if(request.method == 'POST'):
-        form = control_form(request.POST, instance=data)
-        if(form.is_valid()):
-            form.save()
-            return redirect("home")
-    else:
-        form = control_form(instance=data)
-    return render(request, "update.html", {"form": form})
+#     if(request.method == 'POST'):
+#         form = control_form(request.POST, instance=data)
+#         if(form.is_valid()):
+#             form.save()
+#             return redirect("home")
+#     else:
+#         form = control_form(instance=data)
+#     return render(request, "update.html", {"form": form})
 
 
 
@@ -50,14 +50,58 @@ def get_sensor_data(request):
 def send_sensor_data(request):
     gar = Garage.objects.first()
 
+    if not gar:
+        return JsonResponse({"error": "No garage data"})
+
     data = {
-        "is_garage": gar.is_garage, 
-        "garage_delay": gar.garage_delay, 
-        "is_light": gar.is_light, 
+        "is_light": gar.is_light,
         "is_exhaust": gar.is_exhaust,
         "is_garage_open": gar.is_garage_open,
-        "is_garage_close": gar.is_garage_close
+        "is_garage_close": gar.is_garage_close,
+        "garage_delay": gar.garage_delay or 2
     }
 
-    print(data)
     return JsonResponse(data)
+
+@csrf_exempt
+def update_control(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+
+        gar = Garage.objects.first()
+
+        if not gar:
+            return JsonResponse({"error": "No garage data"})
+
+        # Normal updates
+        gar.is_light = data.get("is_light", gar.is_light)
+        gar.is_exhaust = data.get("is_exhaust", gar.is_exhaust)
+
+        # 🚪 GARAGE OPEN
+        if data.get("is_garage_open"):
+            gar.is_garage_open = True
+            gar.is_garage_close = False
+            gar.is_light = True   # 💡 AUTO ON
+
+        # 🚪 GARAGE CLOSE
+        if data.get("is_garage_close"):
+            gar.is_garage_close = True
+            gar.is_garage_open = False
+            gar.is_light = False  # 💡 AUTO OFF
+
+        gar.save()
+
+        return JsonResponse({"status": "updated"})
+
+    return JsonResponse({"error": "POST required"})
+
+@require_GET
+def get_latest_sensor(request):
+    latest = SensorData.objects.last()
+
+    if not latest:
+        return JsonResponse({"value": 0})
+
+    return JsonResponse({
+        "value": latest.air_quality
+    })
