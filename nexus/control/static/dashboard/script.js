@@ -134,11 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 els.mobileStatusLabel.className = 'text-[10px] uppercase font-bold tracking-wider text-red-400';
                 els.mobileStatusDot.className = 'absolute top-2 right-6 w-2 h-2 rounded-full bg-red-500 animate-pulse';
 
-                // Button states
-                els.btnOpen.disabled = true;
-                els.btnOpen.classList.add('opacity-50', 'cursor-not-allowed');
-                els.btnClose.disabled = false;
-                els.btnClose.classList.remove('opacity-50', 'cursor-not-allowed');
                 break;
 
             case 'closed':
@@ -151,11 +146,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 els.mobileStatusLabel.className = 'text-[10px] uppercase font-bold tracking-wider text-emerald-400';
                 els.mobileStatusDot.className = 'absolute top-2 right-6 w-2 h-2 rounded-full bg-emerald-500';
 
-                // Button states
-                els.btnOpen.disabled = false;
-                els.btnOpen.classList.remove('opacity-50', 'cursor-not-allowed');
-                els.btnClose.disabled = true;
-                els.btnClose.classList.add('opacity-50', 'cursor-not-allowed');
                 break;
 
             case 'opening':
@@ -169,137 +159,131 @@ document.addEventListener('DOMContentLoaded', () => {
                 els.mobileStatusLabel.className = 'text-[10px] uppercase font-bold tracking-wider text-yellow-500';
                 els.mobileStatusDot.className = 'absolute top-2 right-6 w-2 h-2 rounded-full bg-yellow-500 animate-pulse';
 
-                // Disable both buttons during transition
-                els.btnOpen.disabled = true;
-                els.btnOpen.classList.add('opacity-50', 'cursor-not-allowed');
-                els.btnClose.disabled = true;
-                els.btnClose.classList.add('opacity-50', 'cursor-not-allowed');
                 break;
         }
     };
 
-const updateGarageRelay = async (payload) => {
-    try {
+    const updateGarageRelay = async (payload) => {
+        try {
+            await fetch('/api/update-control/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        } catch (e) {
+            console.error('Garage relay update failed', e);
+        }
+    };
+
+    const handleOpenPress = async (event) => {
+        event.preventDefault();
+        const btn = event.currentTarget;
+
+        addLog('Open button pressed (push mode)', 'action');
+        setDoorState('opening');
+        await updateGarageRelay({ is_garage_open: true, is_garage_close: false, is_light: true });
+
+        state.light = true;
+        els.toggleLight.checked = true;
+        els.lightStatusText.textContent = 'On';
+        els.lightIcon.className = 'ph-fill ph-lightbulb text-2xl text-yellow-400';
+    };
+
+    const handleOpenRelease = async (event) => {
+        event.preventDefault();
+        const btn = event.currentTarget;
+        btn.classList.remove('pressed');
+
+        addLog('Open button released (push mode)', 'info');
+        await updateGarageRelay({ is_garage_open: false });
+
+        setDoorState('closed');
+        addLog('Garage open command released', 'info');
+    };
+
+    const handleClosePress = async (event) => {
+        event.preventDefault();
+        const btn = event.currentTarget;
+        btn.classList.add('pressed');
+
+        addLog('Close button pressed (push mode)', 'action');
+        setDoorState('closing');
+        await updateGarageRelay({ is_garage_close: true, is_garage_open: false, is_light: false });
+
+        state.light = false;
+        els.toggleLight.checked = false;
+        els.lightStatusText.textContent = 'Off';
+        els.lightIcon.className = 'ph ph-lightbulb text-2xl text-yellow-500';
+    };
+
+    const handleCloseRelease = async (event) => {
+        event.preventDefault();
+        const btn = event.currentTarget;
+        btn.classList.remove('pressed');
+
+        addLog('Close button released (push mode)', 'info');
+        await updateGarageRelay({ is_garage_close: false, is_garage_open: false });
+
+        setDoorState('closed');
+        addLog('Garage close command released', 'info');
+    };
+
+    els.btnClose.addEventListener('mousedown', handleClosePress);
+    els.btnClose.addEventListener('mouseup', handleCloseRelease);
+    els.btnClose.addEventListener('mouseleave', handleCloseRelease);
+    els.btnClose.addEventListener('touchstart', handleClosePress);
+    els.btnClose.addEventListener('touchend', handleCloseRelease);
+    els.btnClose.addEventListener('touchcancel', handleCloseRelease);
+
+    const handleOpenDoor = async () => {
+        if (state.door !== 'closed') return;
+
+        addLog('Opening garage...', 'action');
+        setDoorState('opening');
+
+        console.log("Sending OPEN command");
+
         await fetch('/api/update-control/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify({ is_garage_open: true })
         });
-    } catch (e) {
-        console.error('Garage relay update failed', e);
-    }
-};
 
-const handleOpenPress = async (event) => {
-    event.preventDefault();
-    const btn = event.currentTarget;
-    btn.classList.add('pressed');
+        // 💡 UPDATE LIGHT UI (IMPORTANT)
+        state.light = true;
+        els.toggleLight.checked = true;
+        els.lightStatusText.textContent = 'On';
+        els.lightIcon.className = 'ph-fill ph-lightbulb text-2xl text-yellow-400';
 
-    addLog('Open button pressed (push mode)', 'action');
-    setDoorState('opening');
-    await updateGarageRelay({ is_garage_open: true, is_garage_close: false, is_light: true });
+        setTimeout(() => {
+            setDoorState('open');
+            addLog('Garage opened', 'success');
+        }, 2000);
+    };
 
-    state.light = true;
-    els.toggleLight.checked = true;
-    els.lightStatusText.textContent = 'On';
-    els.lightIcon.className = 'ph-fill ph-lightbulb text-2xl text-yellow-400';
-};
+    const handleCloseDoor = async () => {
+        if (state.door !== 'open') return;
 
-const handleOpenRelease = async (event) => {
-    event.preventDefault();
-    const btn = event.currentTarget;
-    btn.classList.remove('pressed');
+        addLog('Closing garage...', 'action');
+        setDoorState('closing');
 
-    addLog('Open button released (push mode)', 'info');
-    await updateGarageRelay({ is_garage_open: false });
+        await fetch('/api/update-control/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ is_garage_close: true })
+        });
 
-    setDoorState('closed');
-    addLog('Garage open command released', 'info');
-};
+        // 💡 UPDATE LIGHT UI (IMPORTANT)
+        state.light = false;
+        els.toggleLight.checked = false;
+        els.lightStatusText.textContent = 'Off';
+        els.lightIcon.className = 'ph ph-lightbulb text-2xl text-yellow-500';
 
-const handleClosePress = async (event) => {
-    event.preventDefault();
-    const btn = event.currentTarget;
-    btn.classList.add('pressed');
-
-    addLog('Close button pressed (push mode)', 'action');
-    setDoorState('closing');
-    await updateGarageRelay({ is_garage_close: true, is_garage_open: false, is_light: false });
-
-    state.light = false;
-    els.toggleLight.checked = false;
-    els.lightStatusText.textContent = 'Off';
-    els.lightIcon.className = 'ph ph-lightbulb text-2xl text-yellow-500';
-};
-
-const handleCloseRelease = async (event) => {
-    event.preventDefault();
-    const btn = event.currentTarget;
-    btn.classList.remove('pressed');
-
-    addLog('Close button released (push mode)', 'info');
-    await updateGarageRelay({ is_garage_close: false });
-
-    setDoorState('closed');
-    addLog('Garage close command released', 'info');
-};
-
-els.btnClose.addEventListener('mousedown', handleClosePress);
-els.btnClose.addEventListener('mouseup', handleCloseRelease);
-els.btnClose.addEventListener('mouseleave', handleCloseRelease);
-els.btnClose.addEventListener('touchstart', handleClosePress);
-els.btnClose.addEventListener('touchend', handleCloseRelease);
-els.btnClose.addEventListener('touchcancel', handleCloseRelease);
-
-const handleOpenDoor = async () => {
-    if (state.door !== 'closed') return;
-
-    addLog('Opening garage...', 'action');
-    setDoorState('opening');
-
-    console.log("Sending OPEN command");
-
-    await fetch('/api/update-control/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_garage_open: true })
-    });
-
-    // 💡 UPDATE LIGHT UI (IMPORTANT)
-    state.light = true;
-    els.toggleLight.checked = true;
-    els.lightStatusText.textContent = 'On';
-    els.lightIcon.className = 'ph-fill ph-lightbulb text-2xl text-yellow-400';
-
-    setTimeout(() => {
-        setDoorState('open');
-        addLog('Garage opened', 'success');
-    }, 2000);
-};
-
-const handleCloseDoor = async () => {
-    if (state.door !== 'open') return;
-
-    addLog('Closing garage...', 'action');
-    setDoorState('closing');
-
-    await fetch('/api/update-control/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_garage_close: true })
-    });
-
-    // 💡 UPDATE LIGHT UI (IMPORTANT)
-    state.light = false;
-    els.toggleLight.checked = false;
-    els.lightStatusText.textContent = 'Off';
-    els.lightIcon.className = 'ph ph-lightbulb text-2xl text-yellow-500';
-
-    setTimeout(() => {
-        setDoorState('closed');
-        addLog('Garage closed', 'success');
-    }, 2000);
-};
+        setTimeout(() => {
+            setDoorState('closed');
+            addLog('Garage closed', 'success');
+        }, 2000);
+    };
 
     const toggleLightState = async (forceState = null) => {
         const nextState = forceState !== null ? forceState : !state.light;
@@ -448,61 +432,27 @@ const handleCloseDoor = async () => {
     };
 
     const fetchControlState = async () => {
-    try {
-        const res = await fetch('/api/send-relay/');
-        const data = await res.json();
+        try {
+            const res = await fetch('/api/send-relay/');
+            const data = await res.json();
 
-        // 🌪️ Sync fan UI
-        if (data.is_exhaust) {
-            state.fan = true;
-            els.toggleFan.checked = true;
-            els.fanStatusText.textContent = 'On';
-            els.fanCard.classList.add('fan-active');
-        } else {
-            state.fan = false;
-            els.toggleFan.checked = false;
-            els.fanStatusText.textContent = 'Off';
-            els.fanCard.classList.remove('fan-active');
+            // 🌪️ Sync fan UI
+            if (data.is_exhaust) {
+                state.fan = true;
+                els.toggleFan.checked = true;
+                els.fanStatusText.textContent = 'On';
+                els.fanCard.classList.add('fan-active');
+            } else {
+                state.fan = false;
+                els.toggleFan.checked = false;
+                els.fanStatusText.textContent = 'Off';
+                els.fanCard.classList.remove('fan-active');
+            }
+
+        } catch (e) {
+            console.log("Control sync error", e);
         }
-
-    } catch (e) {
-        console.log("Control sync error", e);
-    }
-};
-
-    const simulateAirQuality = () => {
-        // Randomly fluctuate values slightly to create a "live" feel
-        const fluctuate = (val, maxDelta, min = 0, max = 500) => {
-            const delta = (Math.random() * maxDelta * 2) - maxDelta;
-            let newVal = val + delta;
-            if (newVal < min) newVal = min;
-            if (newVal > max) newVal = max;
-            return Math.round(newVal);
-        };
-
-        // Occasional "event" simulation
-        const isEventOccurring = Math.random() > 0.95; // 5% chance every tick
-
-        if (state.door === 'closed' && state.fan === false && isEventOccurring) {
-            // If closed and no ventilation, accumulate fumes occasionally
-            state.airQuality.aqi += 15;
-            state.airQuality.co += 5;
-            state.airQuality.gas += 1;
-        } else if (state.fan === true || state.door === 'open') {
-            // Ventilation active, decrease fumes rapidly
-            state.airQuality.aqi = fluctuate(state.airQuality.aqi - 5, 2, 20);
-            state.airQuality.co = fluctuate(state.airQuality.co - 2, 1, 0);
-            state.airQuality.gas = fluctuate(state.airQuality.gas - 0.5, 0.5, 0);
-        } else {
-            // Normal baseline fluctuation
-            state.airQuality.aqi = fluctuate(state.airQuality.aqi, 2, 20, 150);
-            state.airQuality.co = fluctuate(state.airQuality.co, 1, 0, 50);
-            state.airQuality.gas = fluctuate(state.airQuality.gas, 0.2, 0, 20);
-        }
-
-        updateAirQualityUI();
     };
-
 
     // --- Initialization ---
     const init = () => {
@@ -551,10 +501,10 @@ const handleCloseDoor = async () => {
             // 🔴 STATUS LOGIC
             if (value > 12000) {
                 setDangerState(value);
-            } 
+            }
             else if (value > 10000) {
                 setWarningState(value);
-            } 
+            }
             else {
                 setSafeState();
             }
@@ -565,54 +515,54 @@ const handleCloseDoor = async () => {
     };
 
     function setDangerState(value) {
-    document.getElementById('aq-badge').textContent = "DANGER";
+        document.getElementById('aq-badge').textContent = "DANGER";
 
-    const meter = document.getElementById('aq-meter-fill');
-    meter.classList.remove('stroke-yellow-400');
-    meter.classList.add('stroke-red-500');
+        const meter = document.getElementById('aq-meter-fill');
+        meter.classList.remove('stroke-yellow-400');
+        meter.classList.add('stroke-red-500');
 
-    fetch('/api/update-control/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_exhaust: true })
-    });
-}
-
-
-function setWarningState(value) {
-    document.getElementById('aq-badge').textContent = "WARNING";
-
-    const meter = document.getElementById('aq-meter-fill');
-    meter.classList.remove('stroke-red-500');
-    meter.classList.add('stroke-yellow-400');
-
-    fetch('/api/update-control/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_exhaust: true })
-    });
-}
+        fetch('/api/update-control/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ is_exhaust: true })
+        });
+    }
 
 
-function setSafeState() {
-    document.getElementById('aq-badge').textContent = "SAFE";
+    function setWarningState(value) {
+        document.getElementById('aq-badge').textContent = "WARNING";
 
-    document.getElementById('aq-badge').className =
-        "px-3 py-1 text-xs font-semibold rounded-full bg-green-500 text-white";
+        const meter = document.getElementById('aq-meter-fill');
+        meter.classList.remove('stroke-red-500');
+        meter.classList.add('stroke-yellow-400');
 
-    // ✅ RESET METER COLOR
-    const meter = document.getElementById('aq-meter-fill');
-    meter.classList.remove('stroke-red-500');
-    meter.classList.remove('stroke-yellow-400');
-    meter.classList.add('stroke-emerald-500');
+        fetch('/api/update-control/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ is_exhaust: true })
+        });
+    }
 
-    // 🌪️ AUTO FAN OFF
-    fetch('/api/update-control/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_exhaust: false })
-    });
-}
+
+    function setSafeState() {
+        document.getElementById('aq-badge').textContent = "SAFE";
+
+        document.getElementById('aq-badge').className =
+            "px-3 py-1 text-xs font-semibold rounded-full bg-green-500 text-white";
+
+        // ✅ RESET METER COLOR
+        const meter = document.getElementById('aq-meter-fill');
+        meter.classList.remove('stroke-red-500');
+        meter.classList.remove('stroke-yellow-400');
+        meter.classList.add('stroke-emerald-500');
+
+        // 🌪️ AUTO FAN OFF
+        fetch('/api/update-control/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ is_exhaust: false })
+        });
+    }
 
     init();
 });

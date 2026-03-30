@@ -81,13 +81,17 @@ def update_control(request):
         if data.get("is_garage_open"):
             gar.is_garage_open = True
             gar.is_garage_close = False
-            gar.is_light = True   # 💡 AUTO ON
+            gar.is_light = True 
+        else:
+            gar.is_garage_open = False
 
         # 🚪 GARAGE CLOSE
         if data.get("is_garage_close"):
             gar.is_garage_close = True
             gar.is_garage_open = False
-            gar.is_light = False  # 💡 AUTO OFF
+            gar.is_light = False 
+        else:
+            gar.is_garage_close = False
 
         gar.save()
 
