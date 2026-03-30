@@ -134,11 +134,6 @@ def main():
             send_data(val)
 
             data = get_data()
-            if not data:
-                time.sleep(2)
-                continue
-
-            print(data)
 
             is_light = data.get("is_light", False)
             is_exhaust = data.get("is_exhaust", False)
@@ -164,7 +159,6 @@ def main():
                 motor_stop()
                 if is_exhaust:
                     exhaust_on()
-                    light_on()
                 else:
                     exhaust_off()
 
